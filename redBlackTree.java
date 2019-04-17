@@ -1,7 +1,7 @@
 package algorithmUtils;
 
 
-import java.util.*;
+import lombok.*;
 
 /**
  * *********************************************************************
@@ -11,112 +11,124 @@ import java.util.*;
  * @vision V1.0.1
  * *********************************************************************
  */
-public class redBlackTree<K, V> {
 
+public class RedBlackTree {
 
     /**
      * 红黑树性质四点：
-     *  1、每个节点要么是红色，要么是黑色。
-     2、根节点必须是黑色
-     3、 红色节点不能连续（也即是，红色节点的孩子和父亲都不能是红色）。
-     4、对于每个节点，从该点至null（树尾端）的任何路径，都含有相同个数的黑色节点。
-     隐藏性质：左右子树高度差不超过一倍，自平衡
+     * <p>
+     * 1、每个节点要么是红色，要么是黑色。
+     * 2、根节点必须是黑色
+     * 3、 红色节点不能连续（也即是，红色节点的孩子和父亲都不能是红色）。
+     * 4、对于每个节点，从该点至null（树尾端）的任何路径，都含有相同个数的黑色节点。
+     * 隐藏性质：左右子树高度差不超过一倍，自平衡
+     * 中序遍历单调递增
      */
-    // Red-black mechanics
-    /**
-     * The number of entries in the tree
-     */
-    private transient int size = 0;
 
-    /**
-     * The number of structural modifications to the tree.
-     */
-    private transient int modCount = 0;
     private static final boolean RED = false;
     private static final boolean BLACK = true;
-    private transient redBlackTree.Entry<K, V> root;
+    private transient TreeNode root;
 
 
     /**
      * 新增节点后的调整操作
      * x 表示新增节点
      */
-    private void fixAfterInsertion(Entry<K, V> x) {
-        x.color = RED;    //新增节点的颜色为红色
-
+    private void fixAfterInsert(TreeNode x) {
+        /**
+         *  新增节点的颜色设置为红色
+         */
+        x.color = RED;
         //循环 :直到 x是根节点，且x的父节点不为红色
         while (x != null && x != root && x.parent.color == RED) {
             /**
              * 判断父亲是否是爷爷的左儿子：产生的两种情况是完全对称的
-             * 对称情况一：若X节点为左儿子
+             * 对称情况一：若父亲节点为左儿子
              */
-            //如果X的父节点（P）是其父节点的父节点（G）的左节点
-            if (parentOf(x) == leftOf(parentOf(parentOf(x)))) {
-                //获取X的叔节点(U)
-                Entry<K, V> y = rightOf(parentOf(parentOf(x)));
-                //如果X的叔节点（U） 为红色（情况三）
-                if (colorOf(y) == RED) {
+            //如果X的父节点（P）是其爷爷节点（G）的左节点
+            if (parentOf(x) == leftOf(grandpaOf(x))) {
+                //获取X的叔叔节点(U)
+                TreeNode U = rightOf(grandpaOf(x));
+                /**
+                 * 如果X的叔节点（U） 为红色（情况一）
+                 * 变色
+                 * @when
+                 */
+                if (colorOf(U) == RED) {
                     //将X的父节点（P）设置为黑色
                     setColor(parentOf(x), BLACK);
                     //将X的叔节点（U）设置为黑色
-                    setColor(y, BLACK);
-                    //将X的父节点的父节点（G）设置红色
-                    setColor(parentOf(parentOf(x)), RED);
-                    x = parentOf(parentOf(x));
+                    setColor(U, BLACK);
+                    //将X的爷爷节点（G）设置红色
+                    setColor(grandpaOf(x), RED);
+                    x = grandpaOf(x);
                 }
-                //如果X的叔节点（U为黑色）；这里会存在两种情况（情况四、情况五）
+                //如果X的叔节点（U为黑色）；这里会存在两种情况（情况二、情况三）分别判断X为左节点还是右节点
                 else {
-                    //如果X节点为其父节点（P）的右子树，则进行左旋转（情况四）
+                    /**
+                     * 如果X节点为其父节点（P）的右子树，则进行左旋转（情况二）
+                     * 左旋
+                     * @when
+                     */
                     if (x == rightOf(parentOf(x))) {
-                        //将X的父节点作为X
+                        //将X的父节点作为X  赋值给X
                         x = parentOf(x);
-                        //右旋转
+                        /**
+                         *  以父节点为中心旋转  /左旋转
+                         */
                         rotateLeft(x);
                     }
-                    //（情况五）
-                    //将X的父节点（P）设置为黑色
+
+                    /**
+                     * （情况三）如果X节点为其父节点（P）的左子树
+                     * 将X的父节点（P）设置为黑色
+                     * @when
+                     */
                     setColor(parentOf(x), BLACK);
-                    //将X的父节点的父节点（G）设置红色
-                    setColor(parentOf(parentOf(x)), RED);
-                    //以X的父节点的父节点（G）为中心右旋转
-                    rotateRight(parentOf(parentOf(x)));
+                    //将X的爷爷节点（G）设置红色
+                    setColor(grandpaOf(x), RED);
+                    //以X的爷爷节点（G）为中心右旋转
+                    rotateRight(grandpaOf(x));
                 }
             }
             /**
-             *   对称情况二：若X节点为右儿子
+             *   对称情况二：若父亲节点为右儿子
              */
             //如果X的父节点（P）是其父节点的父节点（G）的右节点
             else {
                 //获取X的叔节点（U）
-                Entry<K, V> y = leftOf(parentOf(parentOf(x)));
-                //如果X的叔节点（U） 为红色（情况三）
+                TreeNode y = leftOf(grandpaOf(x));
+                //如果X的叔节点（U） 为红色（情况一）
                 if (colorOf(y) == RED) {
                     //将X的父节点（P）设置为黑色
                     setColor(parentOf(x), BLACK);
                     //将X的叔节点（U）设置为黑色
                     setColor(y, BLACK);
                     //将X的父节点的父节点（G）设置红色
-                    setColor(parentOf(parentOf(x)), RED);
-                    x = parentOf(parentOf(x));
+                    setColor(grandpaOf(x), RED);
+                    x = grandpaOf(x);
                 }
-                //如果X的叔节点（U为黑色）；这里会存在两种情况（情况四、情况五）
+                //如果X的叔节点（U为黑色）；这里会存在两种情况（情况二、情况三）
                 else {
-                    //如果X节点为其父节点（P）的右子树，则进行左旋转（情况四）
+                    //如果X节点为其父节点（P）的右子树，则进行左旋转（情况二）
                     if (x == leftOf(parentOf(x))) {
                         //将X的父节点作为X
                         x = parentOf(x);
                         //右旋转
                         rotateRight(x);
                     }
-                    //（情况五）
+                    //（情况三）
                     //将X的父节点（P）设置为黑色
                     setColor(parentOf(x), BLACK);
                     //将X的父节点的父节点（G）设置红色
-                    setColor(parentOf(parentOf(x)), RED);
-                    //以X的父节点的父节点（G）为中心右旋转
-                    rotateLeft(parentOf(parentOf(x)));
+                    setColor(grandpaOf(x), RED);
+                    //以X的父节点的父节点（G）为中心左旋转
+                    rotateLeft(grandpaOf(x));
                 }
             }
+            /**
+             *  完成一遍调整：重复操作
+             */
         }
         //将根节点G强制设置为黑色
         root.color = BLACK;
@@ -126,7 +138,7 @@ public class redBlackTree<K, V> {
      * 删除节点后的调整操作
      * x 表示删除节点
      */
-    private void fixAfterDeletion(Entry<K, V> x) {
+    private void fixAfterDelete(TreeNode x) {
         // 删除节点需要一直迭代， 直到 x 是根节点，且 x 的颜色是黑色
         while (x != root && colorOf(x) == BLACK) {
             /**
@@ -135,8 +147,8 @@ public class redBlackTree<K, V> {
              */
             if (x == leftOf(parentOf(x))) {
                 //获取其兄弟节点
-                Entry<K, V> sib = rightOf(parentOf(x));
-                /*
+                TreeNode sib = rightOf(parentOf(x));
+                /**
                  * 情况一：如果兄弟节点为红色----
                  * 策略：改变W、P的颜色，然后进行一次左旋转
                  */
@@ -146,16 +158,16 @@ public class redBlackTree<K, V> {
                     rotateLeft(parentOf(x));
                     sib = rightOf(parentOf(x));
                 }
-                /*
+                /**
                  *  情况二：若兄弟节点的两个子节点都为黑色----
-                 * 策略：将兄弟节点编程红色
+                 * 策略：将兄弟节点变成红色
                  */
                 if (colorOf(leftOf(sib)) == BLACK &&
                         colorOf(rightOf(sib)) == BLACK) {
                     setColor(sib, RED);
                     x = parentOf(x);
                 } else {
-                    /*
+                    /**
                      *  情况三：如果兄弟节点只有右子树为黑色----
                      * 策略：将兄弟节点与其左子树进行颜色互换然后进行右转
                      * 这时情况会转变为3.4
@@ -166,7 +178,7 @@ public class redBlackTree<K, V> {
                         rotateRight(sib);
                         sib = rightOf(parentOf(x));
                     }
-                    /*
+                    /**
                      * 情况四：排除前两种情况下都要执行
                      *策略：交换兄弟节点和父节点的颜色，
                      *同时将兄弟节点右子树设置为黑色，最后左旋转
@@ -183,7 +195,7 @@ public class redBlackTree<K, V> {
              *   对称情况二：若X节点为右儿子
              */
             else {
-                Entry<K, V> sib = leftOf(parentOf(x));
+                TreeNode sib = leftOf(parentOf(x));
 
                 if (colorOf(sib) == RED) {
                     setColor(sib, BLACK);
@@ -211,38 +223,44 @@ public class redBlackTree<K, V> {
                 }
             }
         }
-
         setColor(x, BLACK);
     }
 
     /**
-     * 删除节点：找到一个替代子节点C来替代P，然后直接删除C，最后调整这棵红黑树。下面代码是寻找替代节点、删除替代节点。主要为了方便删除：没有儿子的节点
+     * 删除节点：找到一个真后继节点C来替代P，然后直接删除C，最后调整这棵红黑树。下面代码是寻找替代节点、删除替代节点。主要为了方便删除：没有儿子的节点
      * （1）处是寻找替代节点replacement，其实现方法为successor()
-     * （2）处是删除该节点过程。它主要分为上面提到的三种情况，它与上面的if…else if… else一一对应 。如下：
+     * （2）处是删除该节点过程。它主要分为上面提到的三种情况（分为二种情况即可），它与上面的if…else if… else一一对应 。如下：
      * <p>
-     *        1、有两个儿子。这种情况比较复杂，但还是比较简单。上面提到过用子节点C替代代替待删除节点D，然后删除子节点C即可。
+     *        1、节点D有两个儿子。用儿子节点C(2)替代待删除节点D，然后删除子节点C(2)即可。
      * <p>
-     *        2、没有儿子，即为叶结点。直接把父结点的对应儿子指针设为NULL，删除儿子结点就OK了。
+     *        2、节点D没有儿子，即为叶结点。直接把父结点的对应儿子指针设为NULL，删除儿子结点就OK了。
      * <p>
-     *        3、只有一个儿子。那么把父结点的相应儿子指针指向儿子的独生子，删除儿子结点也OK了。
+     *        3、节点D只有一个儿子。那么节点D的父节点的儿子指针->指向节点D的儿子 ;节点D的儿子指针指向->节点D的父节点，删除节点D也OK了。
      * <p>
-     *        删除完节点后，就要根据情况来对红黑树进行复杂的调整：fixAfterDeletion()。
+     * （3）删除该节点后调整：
+     *        4、 删除完节点D，就要根据情况来对红黑树进行复杂的调整：fixAfterDelete(D)。
      */
-    private void deleteEntry(Entry<K, V> p) {
-        modCount++;      //修改次数 +1
-        size--;          //元素个数 -1
+    private void delete(TreeNode p) {
         /**
-         * 寻找替换节点并替换P节点操作：
+         * 寻找真后继节点并替换P节点操作：
          */
         /*
          * 被删除节点的左子树和右子树都不为空，那么就用 p节点的中序后继节点代替 p 节点
+         * successor(P)方法：寻找真后继节点：
          * successor(P)方法为寻找P的替代节点。规则是:右分支不为空？：1、右分支最左边，否则 2、左分支最右边的节点
-         * ---------------------（1）
+         * -----------------------（1）
          */
         if (p.left != null && p.right != null) {
-            Entry<K, V> s = successor(p);
-            /*                   */
-            p.key = s.key;
+            /**
+             * 找到真后继
+             * @when 2019/4/16
+             */
+            TreeNode s = successor(p);
+            /*这里要知道是值传递,传递的内存地址：KV为泛型*/
+            /**
+             * 替换P
+             * @when 2019/4/16
+             */
             p.value = s.value;
             p = s;
         }
@@ -251,7 +269,7 @@ public class redBlackTree<K, V> {
          * 以下是删除操作：实际上就是用左儿子（优先级更高）或者右儿子去替换P节点
          */
         //replacement为替代节点，如果P的左子树存在那么就用左子树替代，否则用右子树替代
-        Entry<K, V> replacement = (p.left != null ? p.left : p.right);
+        TreeNode replacement = (p.left != null ? p.left : p.right);
 
         /*
          * 删除节点，分为上面提到的三种情况
@@ -266,9 +284,6 @@ public class redBlackTree<K, V> {
              * 1：父指针指向同一个
              */
             replacement.parent = p.parent;
-            /*
-             *replacement来替代P节点
-             */
             /**
              * 2：儿子指针指向replacement
              */
@@ -289,11 +304,11 @@ public class redBlackTree<K, V> {
              */
             //同时将P节点从这棵树中剔除掉
             p.left = p.right = p.parent = null;
-
-            /*
+            /**
              * 若P为红色直接删除，红黑树保持平衡
              * 但是若P为黑色，则需要调整红黑树使其保持平衡
              */
+
             /**
              * 4：判断删除后节点颜色进行调整树平衡
              */
@@ -303,7 +318,7 @@ public class redBlackTree<K, V> {
                 /**
                  * replacement：颜色是没有变的，replacement可能是红色也不需要调整，因为判断的是P节点颜色
                  */
-                fixAfterDeletion(replacement);
+                fixAfterDelete(replacement);
             }
         }
         /**
@@ -321,14 +336,13 @@ public class redBlackTree<K, V> {
             //如果P节点的颜色为黑色，对红黑树进行调整
             if (p.color == BLACK) {
                 /*二：replacement为空，调整P*/
-                fixAfterDeletion(p);
+                fixAfterDelete(p);
             }
             //删除P节点
             if (p.parent != null) {
                 if (p == p.parent.left) {
                     p.parent.left = null;
-                }
-                else if (p == p.parent.right) {
+                } else if (p == p.parent.right) {
                     p.parent.right = null;
                 }
                 p.parent = null;
@@ -337,16 +351,18 @@ public class redBlackTree<K, V> {
     }
 
     /**
-     * （1）处是寻找替代节点replacement，其实现方法为successor()。
+     * 找真后继节点方法
+     * <p>
+     * 1、寻找右子树的最左叶子节点 2、或者左子树的最右叶子节点
      */
-    static <K, V> redBlackTree.Entry<K, V> successor(Entry<K, V> t) {
+    static TreeNode successor(TreeNode t) {
         if (t == null)
             return null;
         /*
          * 寻找右子树的最左子树
          */
         else if (t.right != null) {
-            Entry<K, V> p = t.right;
+            TreeNode p = t.right;
             while (p.left != null)
                 p = p.left;
             return p;
@@ -355,8 +371,8 @@ public class redBlackTree<K, V> {
          * 选择左子树的最右子树
          */
         else {
-            Entry<K, V> p = t.parent;
-            Entry<K, V> ch = t;
+            TreeNode p = t.parent;
+            TreeNode ch = t;
             while (p != null && ch == p.right) {
                 ch = p;
                 p = p.parent;
@@ -368,12 +384,15 @@ public class redBlackTree<K, V> {
 
     /**
      * From CLR
+     * P      =>     N
+     * A    N         P    b
+     * a   b     A   a
      */
     /* 所谓左旋转，就是将新增节点（N）当做其父节点（P），将其父节点P当做新增节点（N）的左子节点。即：G.left ---> N ,N.left ---> P。*/
-    private void rotateLeft(Entry<K, V> p) {
+    private void rotateLeft(TreeNode p) {
         if (p != null) {
             //获取P的右子节点，其实这里就相当于新增节点N（情况四而言）
-            Entry<K, V> r = p.right;
+            TreeNode r = p.right;
             //将R的左子树设置为P的右子树
             p.right = r.left;
             //若R的左子树不为空，则将P设置为R左子树的父亲
@@ -402,10 +421,10 @@ public class redBlackTree<K, V> {
      * From CLR
      */
     /*  所谓右旋转即，左节点.right ---> 父节点、父节点.parent ---> 左节点。*/
-    private void rotateRight(Entry<K, V> p) {
+    private void rotateRight(TreeNode p) {
         if (p != null) {
             //将L设置为P的左子树
-            Entry<K, V> l = p.left;
+            TreeNode l = p.left;
             //将L的右子树设置为P的左子树
             p.left = l.right;
             //若L的右子树不为空，则将P设置L的右子树的父节点
@@ -431,86 +450,60 @@ public class redBlackTree<K, V> {
     }
 
     /**
-     * Balancing operations.
      * <p>
-     * Implementations of rebalancings during insertion and deletion are
-     * slightly different than the CLR version.  Rather than using dummy
-     * nilnodes, we use a set of accessors that deal properly with null.  They
-     * are used to avoid messiness surrounding nullness checks in the main
+     * 常用方法
      * algorithms.
      */
 
-    private static <K, V> boolean colorOf(Entry<K, V> p) {
+    private static boolean colorOf(TreeNode p) {
         return (p == null ? BLACK : p.color);
     }
 
-    private static <K, V> Entry<K, V> parentOf(Entry<K, V> p) {
+    private static TreeNode parentOf(TreeNode p) {
         return (p == null ? null : p.parent);
     }
 
-    private static <K, V> void setColor(Entry<K, V> p, boolean c) {
+    private static void setColor(TreeNode p, boolean c) {
         if (p != null)
             p.color = c;
     }
 
-    private static <K, V> Entry<K, V> leftOf(Entry<K, V> p) {
+    private static TreeNode leftOf(TreeNode p) {
         return (p == null) ? null : p.left;
     }
 
-    private static <K, V> Entry<K, V> rightOf(Entry<K, V> p) {
+    private static TreeNode rightOf(TreeNode p) {
         return (p == null) ? null : p.right;
+    }
+
+    private static TreeNode grandpaOf(TreeNode p) {
+        return (p == null) ? null : p.parent.parent;
     }
 
 
     /**
-     * Node in the Tree.  Doubles as a means to pass key-value pairs back to
-     * user (see Map.Entry).
+     *
+     *
      */
-    static final class Entry<K, V>  {
-        K key;
-        V value;
-        redBlackTree.Entry<K, V> left;
-        redBlackTree.Entry<K, V> right;
-        redBlackTree.Entry<K, V> parent;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    @EqualsAndHashCode
+    static final class TreeNode {
+
+        int value;
+        TreeNode left;
+        TreeNode right;
+        TreeNode parent;
         boolean color = BLACK;
 
-        Entry(K key, V value, redBlackTree.Entry<K, V> parent) {
-            this.key = key;
+        TreeNode(int value, TreeNode parent) {
             this.value = value;
             this.parent = parent;
         }
 
-        public K getKey() {
-            return key;
-        }
-
-        public V getValue() {
-            return value;
-        }
-
-        public V setValue(V value) {
-            V oldValue = this.value;
-            this.value = value;
-            return oldValue;
-        }
-
-        public boolean equals(Object o) {
-            if (!(o instanceof Map.Entry))
-                return false;
-            Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
-            return Objects.equals(e.getKey(), key) && Objects.equals(e.getValue(), value);
-        }
-
-        public int hashCode() {
-            int keyHash = (key == null ? 0 : key.hashCode());
-            int valueHash = (value == null ? 0 : value.hashCode());
-            /*异或*/
-            return keyHash ^ valueHash;
-        }
-
-        public String toString() {
-            return key + "=" + value;
-        }
     }
 
 
