@@ -6,9 +6,8 @@ import lombok.*;
 /**
  * *********************************************************************
  * <br/>
- *
+ * 红黑树 数据结构
  * @date 2019/2/13 15:42
- * @vision V1.0.1
  * *********************************************************************
  */
 
@@ -24,14 +23,16 @@ public class RedBlackTree {
      * 隐藏性质：左右子树高度差不超过一倍，自平衡
      * 中序遍历单调递增
      */
-
     private static final boolean RED = false;
     private static final boolean BLACK = true;
     private transient TreeNode root;
 
-
     /**
      * 新增节点后的调整操作
+     * （1）判断父节点是否左儿子
+     * （2）判断叔叔节点是否为红色：是就变黑
+     * （3）判断X节点是否为右节点：是就左旋，最后右旋
+     * <p>
      * x 表示新增节点
      */
     private void fixAfterInsert(TreeNode x) {
@@ -51,7 +52,7 @@ public class RedBlackTree {
                 TreeNode U = rightOf(grandpaOf(x));
                 /**
                  * 如果X的叔节点（U） 为红色（情况一）
-                 * 变色
+                 * 最简单情况：变色
                  * @when
                  */
                 if (colorOf(U) == RED) {
@@ -136,6 +137,10 @@ public class RedBlackTree {
 
     /**
      * 删除节点后的调整操作
+     * （1）判断删除节点X为父节点的左儿子
+     * (2)判断兄弟节点friend是否为红 ：为红就变黑左旋
+     * （3）判断兄弟节点friend是否二个黑子节点：直接变黑friend节点
+     * （4）判断兄弟节点friend右节点是否为黑：最后左旋
      * x 表示删除节点
      */
     private void fixAfterDelete(TreeNode x) {
@@ -147,45 +152,56 @@ public class RedBlackTree {
              */
             if (x == leftOf(parentOf(x))) {
                 //获取其兄弟节点
-                TreeNode sib = rightOf(parentOf(x));
+                TreeNode friend = rightOf(parentOf(x));
                 /**
                  * 情况一：如果兄弟节点为红色----
-                 * 策略：改变W、P的颜色，然后进行一次左旋转
+                 *    黑             红
+                 *           =》》
+                 * 黑    红        黑     黑
+                 * 策略：改变兄弟节点和父节点的颜色，然后进行一次左旋转
+                 * =>导致后面 兄弟节点一定为黑色
                  */
-                if (colorOf(sib) == RED) {
-                    setColor(sib, BLACK);
+                if (colorOf(friend) == RED) {
+                    setColor(friend, BLACK);
                     setColor(parentOf(x), RED);
                     rotateLeft(parentOf(x));
-                    sib = rightOf(parentOf(x));
+                    friend = rightOf(parentOf(x));
                 }
                 /**
                  *  情况二：若兄弟节点的两个子节点都为黑色----
                  * 策略：将兄弟节点变成红色
                  */
-                if (colorOf(leftOf(sib)) == BLACK &&
-                        colorOf(rightOf(sib)) == BLACK) {
-                    setColor(sib, RED);
+                if (colorOf(leftOf(friend)) == BLACK &&
+                        colorOf(rightOf(friend)) == BLACK) {
+                    setColor(friend, RED);
                     x = parentOf(x);
-                } else {
+
+                }
+                /**
+                 * 若兄弟节点的其中一个子节点为黑色，或者全为红----
+                 * @when 2019/4/17
+                 */
+                else {
                     /**
                      *  情况三：如果兄弟节点只有右子树为黑色----
-                     * 策略：将兄弟节点与其左子树进行颜色互换然后进行右转
-                     * 这时情况会转变为3.4
+                     * 策略：将兄弟节点与其左子树进行颜色互换然后进行右旋转
+                     * 这时情况会转变为情况四
                      */
-                    if (colorOf(rightOf(sib)) == BLACK) {
-                        setColor(leftOf(sib), BLACK);
-                        setColor(sib, RED);
-                        rotateRight(sib);
-                        sib = rightOf(parentOf(x));
+                    if (colorOf(rightOf(friend)) == BLACK) {
+                        setColor(leftOf(friend), BLACK);
+                        setColor(friend, RED);
+                        rotateRight(friend);
+                        friend = rightOf(parentOf(x));
                     }
                     /**
-                     * 情况四：排除前两种情况下都要执行
+                     * 情况四：排除前两种情况下都要执行：若兄弟节点的右节点为红
                      *策略：交换兄弟节点和父节点的颜色，
+                     * 实际上就是父节点变为黑，兄弟节点变为红
                      *同时将兄弟节点右子树设置为黑色，最后左旋转
                      */
-                    setColor(sib, colorOf(parentOf(x)));
+                    setColor(friend, colorOf(parentOf(x)));
                     setColor(parentOf(x), BLACK);
-                    setColor(rightOf(sib), BLACK);
+                    setColor(rightOf(friend), BLACK);
                     rotateLeft(parentOf(x));
                     x = root;
                 }
@@ -195,29 +211,28 @@ public class RedBlackTree {
              *   对称情况二：若X节点为右儿子
              */
             else {
-                TreeNode sib = leftOf(parentOf(x));
-
-                if (colorOf(sib) == RED) {
-                    setColor(sib, BLACK);
+                TreeNode friend = leftOf(parentOf(x));
+                if (colorOf(friend) == RED) {
+                    setColor(friend, BLACK);
                     setColor(parentOf(x), RED);
                     rotateRight(parentOf(x));
-                    sib = leftOf(parentOf(x));
+                    friend = leftOf(parentOf(x));
                 }
 
-                if (colorOf(rightOf(sib)) == BLACK &&
-                        colorOf(leftOf(sib)) == BLACK) {
-                    setColor(sib, RED);
+                if (colorOf(rightOf(friend)) == BLACK &&
+                        colorOf(leftOf(friend)) == BLACK) {
+                    setColor(friend, RED);
                     x = parentOf(x);
                 } else {
-                    if (colorOf(leftOf(sib)) == BLACK) {
-                        setColor(rightOf(sib), BLACK);
-                        setColor(sib, RED);
-                        rotateLeft(sib);
-                        sib = leftOf(parentOf(x));
+                    if (colorOf(leftOf(friend)) == BLACK) {
+                        setColor(rightOf(friend), BLACK);
+                        setColor(friend, RED);
+                        rotateLeft(friend);
+                        friend = leftOf(parentOf(x));
                     }
-                    setColor(sib, colorOf(parentOf(x)));
+                    setColor(friend, colorOf(parentOf(x)));
                     setColor(parentOf(x), BLACK);
-                    setColor(leftOf(sib), BLACK);
+                    setColor(leftOf(friend), BLACK);
                     rotateRight(parentOf(x));
                     x = root;
                 }
@@ -238,7 +253,7 @@ public class RedBlackTree {
      *        3、节点D只有一个儿子。那么节点D的父节点的儿子指针->指向节点D的儿子 ;节点D的儿子指针指向->节点D的父节点，删除节点D也OK了。
      * <p>
      * （3）删除该节点后调整：
-     *        4、 删除完节点D，就要根据情况来对红黑树进行复杂的调整：fixAfterDelete(D)。
+     *        4、 删除完节点D，就要根据情况来对红黑树进行调整：fixAfterDelete(D)。
      */
     private void delete(TreeNode p) {
         /**
