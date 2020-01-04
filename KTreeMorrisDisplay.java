@@ -261,6 +261,7 @@ public class KTreeMorrisDisplay {
          * @when 2019/4/15
          */
         TreeNode tail;
+
         /**
          * 判断是否是尾节点前面节点
          * 实际上是判断回调方法
@@ -299,11 +300,14 @@ public class KTreeMorrisDisplay {
         }
 
         public void setChildNode(List<TreeNode> childNode) {
+            if (childNode.isEmpty())
+                return;
             this.childNode = childNode;
             this.tail = childNode.get(childNode.size() - 1);
             this.head = childNode.get(0);
 
         }
+
         public void setHead(TreeNode head) {
             this.head = head;
             /**
@@ -316,6 +320,7 @@ public class KTreeMorrisDisplay {
             this.tail = tail;
             this.childNode.add(tail);
         }
+
         TreeNode(int x) {
             val = x;
         }
