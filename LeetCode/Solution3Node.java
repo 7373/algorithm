@@ -263,7 +263,9 @@ public class Solution3Node {
         return result;
     }
 
-
+    /**
+     * 超过时间限制
+     */
     public int numDistinctV4(String s, String t) {
         Map<List<Integer>, String> selectMap = new HashMap<>(t.length());
 //        Set<String>  filterNo=new HashSet<>();
@@ -313,6 +315,60 @@ public class Solution3Node {
         return result;
     }
 
+
+
+    /**
+     * 超时
+     */
+    public int numDistinctV5(String s, String t) {
+        Map<List<Integer>, String> selectMap = new HashMap<>(t.length());
+        Map<List<Integer>, String> addMap;
+        selectMap.put(new LinkedList<>(), "");
+        /**
+         * 字符对应的下标
+         */
+        HashMap<Character, List<Integer>> characterIntegerHashMap = new HashMap<>();
+        for (int i = 0; i <t.length(); i++) {
+            characterIntegerHashMap.put(t.charAt(i), new ArrayList<>());
+        }
+        for (int i = 0; i < s.length(); i++) {
+            List<Integer> indexList = characterIntegerHashMap.get(s.charAt(i));
+            if (null != indexList) {
+                indexList.add(i);
+                characterIntegerHashMap.put(s.charAt(i),
+                        indexList);
+            }
+        }
+        int result=0;
+        do {
+            addMap = new HashMap<>(selectMap.size());
+            List<Integer> addSelect;
+            for (Map.Entry<List<Integer>, String> oneSelectEntry : selectMap.entrySet()) {
+                List<Integer> oneSelect = oneSelectEntry.getKey();
+                int last = oneSelect.isEmpty() ? -1 : oneSelect.get(oneSelect.size() - 1);
+                String value = oneSelectEntry.getValue();
+                /**
+                 * 当前要选择的字符
+                 */
+                List<Integer> canSelects= characterIntegerHashMap.get(t.charAt(value.length()));
+                for (int index : canSelects) {
+                    if (index <= last) {
+                        continue;
+                    }
+                    if (t.length() == value.length()+1) {
+                        result++;
+                        continue;
+                    }
+                    String temp = value + s.charAt(index);
+                    addSelect = new LinkedList<>(oneSelect);
+                    addSelect.add(index);
+                    addMap.put(addSelect, temp);
+                }
+            }
+            selectMap = addMap;
+        } while (!selectMap.isEmpty());
+        return result;
+    }
 
     /**
      * 结果不对
