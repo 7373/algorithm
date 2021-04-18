@@ -181,4 +181,84 @@ public class Solution6 {
         return true;
     }
 
+    /**
+     *
+     * 给定一个数组 nums 和滑动窗口的大小 k，请找出所有滑动窗口里的最大值。
+     *
+     * 示例:
+     *
+     * 输入: nums = [1,3,-1,-3,5,3,6,7], 和 k = 3
+     * 输出: [3,3,5,5,6,7]
+     * 解释:
+     *
+     *   滑动窗口的位置                最大值
+     * ---------------               -----
+     * [1  3  -1] -3  5  3  6  7       3
+     *  1 [3  -1  -3] 5  3  6  7       3
+     *  1  3 [-1  -3  5] 3  6  7       5
+     *  1  3  -1 [-3  5  3] 6  7       5
+     *  1  3  -1  -3 [5  3  6] 7       6
+     *  1  3  -1  -3  5 [3  6  7]      7
+     *
+     * 来源：力扣（LeetCode）
+     * 链接：https://leetcode-cn.com/problems/hua-dong-chuang-kou-de-zui-da-zhi-lcof
+     * 著作权归领扣网络所有。商业转载请联系官方授权，非商业转载请注明出处。
+     */
+
+    public int[] maxSlidingWindow(int[] nums, int k) {
+        if(nums.length==0){
+            return nums;
+        }
+        int[]res=new int[nums.length-k+1];
+        int max=Integer.MIN_VALUE;
+        /**
+         * 最大值的下标 有相同的 取最右边的那个
+         */
+        int maxIndex=0;
+        for(int i=0;i<k;++i){
+//            max=Math.max(max,nums[i]);
+            if(nums[i]>=max){
+                max=nums[i];
+                maxIndex=i;
+            }
+        }
+        res[0]=max;
+        for(int j=k;j<nums.length;++j ){
+            if(nums[j]>=max){
+                res[j-k+1]=nums[j];
+                max=nums[j];
+                maxIndex=j;
+                continue;
+            }
+//            if(nums[j-k]!=max){
+//                res[j-k+1]=max;
+//                continue;
+//            }
+            /**
+             * 最大值取到左边的窗口
+             */
+            //不是最左边那个数取在最大值 说明还在窗口中 可以直接用
+            if(j-k!=maxIndex){
+                res[j-k+1]=max;
+                continue;
+            }
+            //最大值已经失效 需要重新计算
+            max=nums[j-k+1];
+            maxIndex=j-k+1;
+            /**
+             * 特殊case  k=1
+             */
+            if(k!=1) {
+                for (int m = j - k + 2; m <= j; ++m) {
+                    if (nums[m] >= max) {
+                        max = nums[m];
+                        maxIndex = m;
+                    }
+                }
+            }
+            res[j-k+1]=max;
+        }
+        return res;
+    }
+
 }
