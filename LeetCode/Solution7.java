@@ -11,6 +11,9 @@ public class Solution7 {
             coins[j] = Integer.parseInt(arr[j]);
         }
         System.out.println(new Solution7().minSubArrayLen(15,coins));
+
+
+        System.out.println(new Solution7().numWaysV1(46));
     }
     /**
      *
@@ -59,7 +62,6 @@ public class Solution7 {
             for(int i=temp.children.size()-1;i>=0;--i ){
                 nodeStack.add(temp.children.get(i));
             }
-//            nodeStack.addAll(temp.children);
         }
         return res;
     }
@@ -204,6 +206,18 @@ public class Solution7 {
         }
 
         return result;
+    }
+    public int numWaysV1(int n) {
+        if (n == 0) {
+            return 1;
+        }
+        long[] dp = new long[n + 3];
+        dp[1] = 1;
+        dp[2] = 2;
+        for (int i = 3; i <= n; ++i) {
+            dp[i] = (dp[i - 1] + dp[i - 2]) % 1000000007;
+        }
+        return (int) (dp[n] % 1000000007);
     }
 
 }
